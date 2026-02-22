@@ -15,7 +15,7 @@ body{
   position:relative;
 }
 
-/* FIXED star layer */
+/* Star field */
 body::before{
   content:"";
   position:fixed;
@@ -24,10 +24,9 @@ body::before{
   background-size:50px 50px;
   animation:stars 120s linear infinite;
   opacity:0.25;
-  pointer-events:none;   /* ← THIS FIXES INPUT ISSUE */
+  pointer-events:none;
   z-index:-1;
 }
-
 @keyframes stars{
   from{transform:translate(0,0);}
   to{transform:translate(-500px,-500px);}
@@ -56,7 +55,6 @@ button{
   color:white;
   font-weight:bold;
 }
-
 button:hover{opacity:0.85}
 
 #gameArea{
@@ -86,29 +84,69 @@ button:hover{opacity:0.85}
   box-shadow:0 0 20px rgba(0,255,255,0.3);
 }
 
+/* Custom rocket shape */
 .rocket{
   position:absolute;
   bottom:0;
-  left:10px;
-  font-size:45px;
+  left:12px;
+  width:35px;
+  height:70px;
   transition:bottom 0.5s ease-out;
+}
+
+.rocket-body{
+  width:35px;
+  height:55px;
+  background:red;
+  border-radius:20px 20px 10px 10px;
+  position:relative;
+}
+
+.rocket-window{
+  width:12px;
+  height:12px;
+  background:white;
+  border-radius:50%;
+  position:absolute;
+  top:15px;
+  left:11px;
+}
+
+.rocket-flame{
+  width:10px;
+  height:20px;
+  background:orange;
+  margin:auto;
+  border-radius:50%;
+  animation:flame 0.2s infinite alternate;
+}
+@keyframes flame{
+  from{transform:scaleY(1);}
+  to{transform:scaleY(1.5);}
 }
 
 .playerName{margin:8px 0;font-weight:bold;}
 .scoreControls{display:flex;flex-direction:column;gap:6px;align-items:center;}
 .scoreControls input{width:80px;text-align:center;}
 
+/* Better meteors */
 .meteor{
   position:fixed;
-  top:-50px;
-  font-size:25px;
-  animation:meteorFall 3s linear forwards;
+  top:-80px;
+  right:-80px;
+  width:6px;
+  height:120px;
+  background:linear-gradient(white,orange,transparent);
+  border-radius:50%;
+  box-shadow:0 0 20px orange;
+  transform:rotate(-45deg);
+  animation:meteorFall 1.5s linear forwards;
   pointer-events:none;
 }
 
 @keyframes meteorFall{
   to{
-    transform:translate(300px,800px);
+    transform:translate(-1200px,1200px) rotate(-45deg);
     opacity:0;
   }
 }
@@ -211,7 +249,12 @@ function renderPlayers(){
     col.innerHTML=`
       <div class="playerName">${p.name}</div>
       <div class="track">
-        <div class="rocket" id="rocket${i}" style="color:${p.color}">🚀</div>
+        <div class="rocket" id="rocket${i}">
+          <div class="rocket-body" style="background:${p.color}">
+            <div class="rocket-window"></div>
+          </div>
+          <div class="rocket-flame"></div>
+        </div>
       </div>
       <div>Score: <span id="score${i}">${p.score}</span></div>
       <div class="scoreControls">
@@ -222,7 +265,6 @@ function renderPlayers(){
         <button onclick="removePlayer(${i})">Remove</button>
       </div>
     `;
-
     area.appendChild(col);
   });
 }
@@ -235,10 +277,8 @@ function changeScore(i,val){
 
 function applyCustom(i){
   if(!gameStarted) return;
-
   const input=document.getElementById(`custom${i}`);
   const value=parseFloat(input.value);
-
   if(!isNaN(value)){
     players[i].score+=value;
     input.value="";
@@ -248,14 +288,12 @@ function applyCustom(i){
 
 function updatePlayer(i){
   document.getElementById(`score${i}`).textContent=players[i].score;
-
   const rocket=document.getElementById(`rocket${i}`);
-  const target=parseFloat(document.getElementById("targetValue").value) || 10;
+  const target=parseFloat(document.getElementById("targetValue").value)||10;
 
-  let percent = players[i].score / target;
-  percent = Math.max(0, Math.min(percent,1));
-
-  rocket.style.bottom=(percent*300)+"px";
+  let percent=players[i].score/target;
+  percent=Math.max(0,Math.min(percent,1));
+  rocket.style.bottom=(percent*280)+"px";
 
   if(percent>=1 && document.getElementById("mode").value==="score"){
     endGame();
@@ -276,16 +314,15 @@ function startGame(){
     setTimeout(endGame,seconds*1000);
   }
 
-  meteorInterval=setInterval(spawnMeteor,1000);
+  meteorInterval=setInterval(spawnMeteor,400);
 }
 
 function spawnMeteor(){
   const meteor=document.createElement("div");
   meteor.className="meteor";
-  meteor.style.left=Math.random()*window.innerWidth+"px";
-  meteor.textContent="☄️";
+  meteor.style.right=Math.random()*window.innerWidth+"px";
   document.body.appendChild(meteor);
-  setTimeout(()=>meteor.remove(),3000);
+  setTimeout(()=>meteor.remove(),1500);
 }
 
 function endGame(){
