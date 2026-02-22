@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Rocket Scoreboard</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
+    color: white;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+}
+
+h1 {
+    margin-top: 20px;
+}
+
+.controls {
+    margin: 20px;
+}
+
+input, button, select {
+    padding: 8px;
+    margin: 5px;
+    border-radius: 5px;
+    border: none;
+}
+
+button {
+    cursor: pointer;
+}
+
+#gameArea {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    height: 400px;
+    margin-top: 30px;
+}
+
+.playerColumn {
+    margin: 0 20px;
+    width: 100px;
+    position: relative;
+}
+
+.track {
+    background: rgba(255,255,255,0.2);
+    height: 350px;
+    width: 20px;
+    margin: auto;
+    position: relative;
+    border-radius: 10px;
+}
+
+.rocket {
+    width: 20px;
+    height: 30px;
+    position: absolute;
+    bottom: 0;
+    border-radius: 10px 10px 5px 5px;
+    transition: bottom 0.3s ease;
+}
+
+.playerName {
+    margin-top: 10px;
+}
+
+.scoreControls {
+    margin-top: 5px;
+}
+
+.scoreControls button {
+    width: 100%;
+    margin: 3px 0;
+}
+
+.scoreControls input {
+    width: 90%;
+    text-align: center;
+}
+#timerDisplay {
+    font-size: 20px;
+    margin-top: 10px;
+}
+#results {
+    margin-top: 20px;
+    font-size: 18px;
+}
+</style>
+</head>
+<body>
+
+<h1>🚀 Rocket Scoreboard</h1>
+
+<div class="controls">
+    <label>
+        Mode:
+        <select id="mode">
+            <option value="score">Target Score</option>
+            <option value="time">Time Limit</option>
+        </select>
+    </label>
+
+    <input type="number" id="targetInput" placeholder="Enter target score or seconds">
+    <button onclick="startGame()">Start Game</button>
+</div>
+
+<div class="controls">
+    <input type="text" id="playerName" placeholder="Player name">
+    <input type="color" id="playerColor" value="#ff0000">
+    <button onclick="addPlayer()">Add Player</button>
+</div>
+
+<div id="timerDisplay"></div>
+<div id="gameArea"></div>
+<div id="results"></div>
+
+<script>
+let players = [];
+let target = 0;
+let mode = "score";
+let timerInterval = null;
+let timeLeft = 0;
+let gameActive = false;
+
+function startGame() {
+    mode = document.getElementById("mode").value;
+    target = parseInt(document.getElementById("targetInput").value);
+    if (!target || target <= 0) return alert("Enter a valid target.");
+
+    players.forEach(p => p.score = 0);
+    gameActive = true;
+    document.getElementById("results").innerHTML = "";
+
+    if (mode === "time") {
+        timeLeft = target;
+        document.getElementById("timerDisplay").innerText = "Time Left: " + timeLeft + "s";
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            document.getElementById("timerDisplay").innerText = "Time Left: " + timeLeft + "s";
+            if (timeLeft <= 0) endGame();
+        }, 1000);
+    } else {
+        document.getElementById("timerDisplay").innerText = "";
+    }
+
+    render();
+}
+
+function addPlayer() {
+    const name = document.getElementById("playerName").value;
+    const color = document.getElementById("playerColor").value;
+    if (!name) return alert("Enter player name.");
+
+    players.push({ name, color, score: 0 });
+    render();
+}
+
+function removePlayer(index) {
+    players.splice(index, 1);
+    render();
+}
+
+function changeScore(index, delta) {
+    if (!gameActive) return;
+
+    players[index].score += delta;
+    if (players[index].score < 0) players[index].score = 0;
+
+    if (mode === "score" && players[index].score >= target) {
+        endGame();
+    }
+
+    render();
+}
+
+function applyCustomScore(index) {
+    const input = document.getElementById("customInput-" + index);
+    const value = parseInt(input.value);
+
+    if (isNaN(value)) return;
+
+    changeScore(index, value);
+    input.value = "";
+}
+
+function endGame() {
+    gameActive = false;
+    clearInterval(timerInterval);
+
+    let sorted = [...players].sort((a,b) => b.score - a.score);
+
+    let resultHTML = "<h2>🏆 Results</h2>";
+    sorted.forEach((p,i) => {
+        resultHTML += `<div>${i+1}. ${p.name} - ${p.score}</div>`;
+    });
+
+    document.getElementById("results").innerHTML = resultHTML;
+}
+
+function render() {
+    const gameArea = document.getElementById("gameArea");
+    gameArea.innerHTML = "";
+
+    players.forEach((player, index) => {
+        const column = document.createElement("div");
+        column.className = "playerColumn";
+
+        const track = document.createElement("div");
+        track.className = "track";
+
+        const rocket = document.createElement("div");
+        rocket.className = "rocket";
+        rocket.style.background = player.color;
+
+        let percent = 0;
+
+        if (mode === "score") {
+            percent = (player.score / target) * 100;
+        } else {
+            let maxScore = Math.max(...players.map(p=>p.score),1);
+            percent = (player.score / maxScore) * 100;
+        }
+
+        if (percent > 100) percent = 100;
+        rocket.style.bottom = (percent / 100) * 320 + "px";
+
+        track.appendChild(rocket);
+        column.appendChild(track);
+
+        const name = document.createElement("div");
+        name.className = "playerName";
+        name.innerText = player.name + " (" + player.score + ")";
+        column.appendChild(name);
+
+        const controls = document.createElement("div");
+        controls.className = "scoreControls";
+        controls.innerHTML = `
+            <button onclick="changeScore(${index},1)">+1</button>
+            <button onclick="changeScore(${index},-1)">-1</button>
+            <input type="number" id="customInput-${index}" placeholder="Enter +/- amount">
+            <button onclick="applyCustomScore(${index})">Apply</button>
+            <button onclick="removePlayer(${index})">Remove</button>
+        `;
+        column.appendChild(controls);
+
+        gameArea.appendChild(column);
+    });
+}
+</script>
+
+</body>
+</html>
