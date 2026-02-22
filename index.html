@@ -4,44 +4,59 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cosmic Scoreboard</title>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',sans-serif;}
+
 body{
   background: radial-gradient(circle at 50% 30%, #0a0f2c, #020412 80%);
   color:white;
   overflow-x:hidden;
+  position:relative;
 }
 
-/* Animated Stars */
+/* FIXED star layer */
 body::before{
   content:"";
   position:fixed;
-  width:200%;
-  height:200%;
+  inset:0;
   background-image:radial-gradient(white 1px,transparent 1px);
   background-size:50px 50px;
   animation:stars 120s linear infinite;
-  opacity:0.3;
+  opacity:0.25;
+  pointer-events:none;   /* ← THIS FIXES INPUT ISSUE */
+  z-index:-1;
 }
+
 @keyframes stars{
   from{transform:translate(0,0);}
   to{transform:translate(-500px,-500px);}
 }
 
-h1{text-align:center;padding:20px;font-size:2.8em;letter-spacing:2px;text-shadow:0 0 20px cyan;}
-.controls{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:10px;}
-input,button,select{
+h1{text-align:center;padding:20px;font-size:2.6em;text-shadow:0 0 20px cyan;}
+
+.controls{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  justify-content:center;
+  padding:10px;
+}
+
+input,select,button{
   padding:8px 12px;
-  border:none;
   border-radius:8px;
+  border:none;
   font-size:1em;
 }
+
 button{
   cursor:pointer;
   background:linear-gradient(45deg,#00c6ff,#0072ff);
   color:white;
   font-weight:bold;
 }
+
 button:hover{opacity:0.85}
 
 #gameArea{
@@ -50,90 +65,88 @@ button:hover{opacity:0.85}
   align-items:flex-end;
   gap:30px;
   padding:40px 20px;
-  position:relative;
   min-height:500px;
+  flex-wrap:wrap;
 }
 
 .playerColumn{
   display:flex;
   flex-direction:column;
   align-items:center;
-  width:120px;
-  position:relative;
+  width:140px;
 }
 
 .track{
-  width:50px;
+  width:60px;
   height:350px;
   background:linear-gradient(to top,#222,#111);
-  border-radius:25px;
+  border-radius:30px;
   position:relative;
   overflow:hidden;
-  box-shadow:0 0 15px rgba(255,255,255,0.2);
+  box-shadow:0 0 20px rgba(0,255,255,0.3);
 }
 
 .rocket{
   position:absolute;
   bottom:0;
-  width:40px;
-  height:60px;
-  left:5px;
-  transition:bottom 0.6s ease-out;
-  font-size:40px;
-}
-
-.flame{
-  position:absolute;
-  bottom:-20px;
   left:10px;
-  font-size:20px;
-  animation:flame 0.2s infinite alternate;
-}
-@keyframes flame{
-  from{transform:scaleY(1);}
-  to{transform:scaleY(1.4);}
+  font-size:45px;
+  transition:bottom 0.5s ease-out;
 }
 
 .playerName{margin:8px 0;font-weight:bold;}
-.scoreControls{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:4px;
+.scoreControls{display:flex;flex-direction:column;gap:6px;align-items:center;}
+.scoreControls input{width:80px;text-align:center;}
+
+.meteor{
+  position:fixed;
+  top:-50px;
+  font-size:25px;
+  animation:meteorFall 3s linear forwards;
+  pointer-events:none;
 }
-.scoreControls input{
-  width:70px;
-  text-align:center;
+
+@keyframes meteorFall{
+  to{
+    transform:translate(300px,800px);
+    opacity:0;
+  }
 }
 
 #results{
   position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.9);
+  inset:0;
+  background:rgba(0,0,0,0.95);
   display:none;
   flex-direction:column;
   justify-content:center;
   align-items:center;
-  z-index:100;
+  z-index:1000;
+}
+
+.winnerText{
+  font-size:3em;
+  color:gold;
+  margin-bottom:30px;
+  text-shadow:0 0 30px gold;
 }
 
 .podium{
   display:flex;
-  align-items:flex-end;
   gap:20px;
-  margin-top:30px;
+  align-items:flex-end;
 }
+
 .step{
   width:120px;
   text-align:center;
-  font-size:1.3em;
   border-radius:10px 10px 0 0;
+  padding:10px;
+  font-weight:bold;
   animation:rise 1s ease forwards;
   transform:translateY(200px);
 }
+
 @keyframes rise{
   to{transform:translateY(0);}
 }
@@ -141,33 +154,9 @@ button:hover{opacity:0.85}
 .gold{background:gold;height:200px;color:black;}
 .silver{background:silver;height:160px;color:black;}
 .bronze{background:#cd7f32;height:130px;color:black;}
-
-.winnerText{
-  font-size:3em;
-  color:gold;
-  text-shadow:0 0 25px gold;
-  animation:flash 1s infinite alternate;
-}
-@keyframes flash{
-  from{opacity:0.6;}
-  to{opacity:1;}
-}
-
-/* Meteor */
-.meteor{
-  position:fixed;
-  top:-50px;
-  font-size:25px;
-  animation:meteorFall 3s linear forwards;
-}
-@keyframes meteorFall{
-  to{
-    transform:translate(300px,800px);
-    opacity:0;
-  }
-}
 </style>
 </head>
+
 <body>
 
 <h1>🚀 COSMIC SCOREBOARD</h1>
@@ -177,9 +166,12 @@ button:hover{opacity:0.85}
 <option value="score">Score to Win</option>
 <option value="time">Timed Game</option>
 </select>
-<input type="number" id="targetValue" placeholder="Target Score or Seconds">
+
+<input type="number" id="targetValue" placeholder="Target Score / Seconds">
+
 <input type="text" id="playerNameInput" placeholder="Player Name">
 <input type="color" id="playerColor" value="#ff0000">
+
 <button onclick="addPlayer()">Add Player</button>
 <button onclick="startGame()">Start</button>
 <button onclick="endGame()">End</button>
@@ -188,14 +180,10 @@ button:hover{opacity:0.85}
 <div id="gameArea"></div>
 
 <div id="results">
-<div class="winnerText">🏆 WINNER 🏆</div>
+<div class="winnerText"></div>
 <div class="podium" id="podium"></div>
 <button onclick="location.reload()">Play Again</button>
 </div>
-
-<audio id="launchSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
-<audio id="scoreSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
-<audio id="winSound" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg"></audio>
 
 <script>
 let players=[];
@@ -203,37 +191,38 @@ let gameStarted=false;
 let meteorInterval;
 
 function addPlayer(){
-  const name=document.getElementById("playerNameInput").value;
+  const name=document.getElementById("playerNameInput").value.trim();
   const color=document.getElementById("playerColor").value;
   if(!name) return;
-  const player={name,score:0,color};
-  players.push(player);
+
+  players.push({name,score:0,color});
+  document.getElementById("playerNameInput").value="";
   renderPlayers();
 }
 
 function renderPlayers(){
   const area=document.getElementById("gameArea");
   area.innerHTML="";
+
   players.forEach((p,i)=>{
     const col=document.createElement("div");
     col.className="playerColumn";
+
     col.innerHTML=`
       <div class="playerName">${p.name}</div>
       <div class="track">
-        <div class="rocket" id="rocket${i}" style="color:${p.color}">
-          🚀
-          <div class="flame">🔥</div>
-        </div>
+        <div class="rocket" id="rocket${i}" style="color:${p.color}">🚀</div>
       </div>
-      <div>Score: <span id="score${i}">0</span></div>
+      <div>Score: <span id="score${i}">${p.score}</span></div>
       <div class="scoreControls">
-        <button onclick="changeScore(${i},1)">+</button>
-        <button onclick="changeScore(${i},-1)">-</button>
-        <input type="number" id="custom${i}">
+        <button onclick="changeScore(${i},1)">+1</button>
+        <button onclick="changeScore(${i},-1)">-1</button>
+        <input type="number" id="custom${i}" placeholder="Enter #">
         <button onclick="applyCustom(${i})">Apply</button>
         <button onclick="removePlayer(${i})">Remove</button>
       </div>
     `;
+
     area.appendChild(col);
   });
 }
@@ -246,10 +235,12 @@ function changeScore(i,val){
 
 function applyCustom(i){
   if(!gameStarted) return;
+
   const input=document.getElementById(`custom${i}`);
-  const val=parseInt(input.value);
-  if(!isNaN(val)){
-    players[i].score+=val;
+  const value=parseFloat(input.value);
+
+  if(!isNaN(value)){
+    players[i].score+=value;
     input.value="";
     updatePlayer(i);
   }
@@ -257,11 +248,15 @@ function applyCustom(i){
 
 function updatePlayer(i){
   document.getElementById(`score${i}`).textContent=players[i].score;
+
   const rocket=document.getElementById(`rocket${i}`);
-  const target=parseInt(document.getElementById("targetValue").value)||10;
-  const percent=Math.min(players[i].score/target,1);
-  rocket.style.bottom=(percent*290)+"px";
-  document.getElementById("scoreSound").play();
+  const target=parseFloat(document.getElementById("targetValue").value) || 10;
+
+  let percent = players[i].score / target;
+  percent = Math.max(0, Math.min(percent,1));
+
+  rocket.style.bottom=(percent*300)+"px";
+
   if(percent>=1 && document.getElementById("mode").value==="score"){
     endGame();
   }
@@ -273,13 +268,15 @@ function removePlayer(i){
 }
 
 function startGame(){
+  if(players.length===0) return;
   gameStarted=true;
-  document.getElementById("launchSound").play();
+
   if(document.getElementById("mode").value==="time"){
     const seconds=parseInt(document.getElementById("targetValue").value)||30;
     setTimeout(endGame,seconds*1000);
   }
-  meteorInterval=setInterval(spawnMeteor,800);
+
+  meteorInterval=setInterval(spawnMeteor,1000);
 }
 
 function spawnMeteor(){
@@ -294,15 +291,22 @@ function spawnMeteor(){
 function endGame(){
   clearInterval(meteorInterval);
   gameStarted=false;
-  document.getElementById("winSound").play();
+
   players.sort((a,b)=>b.score-a.score);
+
   document.getElementById("results").style.display="flex";
   document.querySelector(".winnerText").textContent=`🏆 ${players[0].name} Wins! 🏆`;
+
   const podium=document.getElementById("podium");
   podium.innerHTML="";
-  if(players[1]) podium.innerHTML+=`<div class="step silver">${players[1].name}<br>${players[1].score}</div>`;
+
+  if(players[1])
+    podium.innerHTML+=`<div class="step silver">${players[1].name}<br>${players[1].score}</div>`;
+
   podium.innerHTML+=`<div class="step gold">${players[0].name}<br>${players[0].score}</div>`;
-  if(players[2]) podium.innerHTML+=`<div class="step bronze">${players[2].name}<br>${players[2].score}</div>`;
+
+  if(players[2])
+    podium.innerHTML+=`<div class="step bronze">${players[2].name}<br>${players[2].score}</div>`;
 }
 </script>
 
