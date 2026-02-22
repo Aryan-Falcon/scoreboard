@@ -2,41 +2,81 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Rocket Race</title>
+<title>Rocket Race Premium</title>
 
 <style>
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', sans-serif;
     color: white;
     text-align: center;
-    background: radial-gradient(circle at bottom, #0b1d2a 0%, #000814 80%);
+    overflow-x: hidden;
+    background: linear-gradient(to bottom, #020111 0%, #191621 60%, #000814 100%);
 }
 
-/* Animated stars */
+/* TWINKLING STARS */
 body::before {
     content: "";
     position: fixed;
     width: 200%;
     height: 200%;
-    background-image: radial-gradient(white 1px, transparent 1px);
-    background-size: 50px 50px;
-    animation: stars 150s linear infinite;
+    background-image:
+        radial-gradient(white 1px, transparent 1px),
+        radial-gradient(white 1px, transparent 1px);
+    background-size: 80px 80px, 120px 120px;
+    animation: starsMove 200s linear infinite;
+    opacity: 0.3;
+    z-index: -2;
+}
+
+@keyframes starsMove {
+    from { transform: translate(0,0); }
+    to { transform: translate(-800px,-800px); }
+}
+
+/* FLOATING PLANETS */
+.planet {
+    position: fixed;
+    border-radius: 50%;
     opacity: 0.2;
     z-index: -1;
+    animation: floatPlanet 30s ease-in-out infinite alternate;
 }
 
-@keyframes stars {
-    from { transform: translate(0,0); }
-    to { transform: translate(-600px,-600px); }
+.planet1 {
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle at 30% 30%, #6a00ff, #2a004f);
+    top: 60px;
+    left: -80px;
 }
 
+.planet2 {
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle at 30% 30%, #00c3ff, #00394f);
+    bottom: 50px;
+    right: -60px;
+}
+
+@keyframes floatPlanet {
+    from { transform: translateY(0); }
+    to { transform: translateY(40px); }
+}
+
+/* GLASS PANELS */
 .controls {
-    margin: 12px;
+    margin: 15px auto;
+    padding: 10px;
+    width: fit-content;
+    backdrop-filter: blur(8px);
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0,255,255,0.1);
 }
 
 input, button, select {
-    padding: 6px;
+    padding: 7px;
     margin: 4px;
     border-radius: 6px;
     border: none;
@@ -46,106 +86,129 @@ input, button, select {
 button {
     cursor: pointer;
     font-weight: bold;
+    background: linear-gradient(45deg, #00c3ff, #6a00ff);
+    color: white;
+    box-shadow: 0 0 10px rgba(0,255,255,0.4);
+    transition: 0.2s;
+}
+
+button:hover {
+    transform: scale(1.05);
 }
 
 #gameArea {
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    gap: 60px;
-    margin-top: 30px;
-    min-height: 520px;
+    gap: 70px;
+    margin-top: 40px;
+    min-height: 550px;
 }
 
 .playerColumn {
-    width: 150px;
+    width: 160px;
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
 .trackContainer {
-    height: 420px;
-    width: 70px;
+    height: 450px;
+    width: 80px;
     position: relative;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
 }
 
 .track {
     position: absolute;
-    width: 8px;
+    width: 10px;
     height: 100%;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(255,255,255,0.2);
-    border-radius: 5px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 6px;
+    box-shadow: 0 0 10px rgba(255,255,255,0.1);
 }
 
 .finishLine {
     position: absolute;
     top: 0;
     width: 100%;
-    height: 4px;
-    background: yellow;
+    height: 6px;
+    background: linear-gradient(90deg, yellow, orange);
+    box-shadow: 0 0 15px yellow;
 }
 
+/* ROCKET */
 .rocket {
     position: absolute;
     bottom: 0;
-    width: 40px;
+    width: 50px;
     left: 50%;
     transform: translateX(-50%);
-    transition: bottom 0.4s ease;
+    transition: bottom 0.6s cubic-bezier(.25,.8,.25,1);
 }
 
 .nose {
     width: 0;
     height: 0;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-bottom: 15px solid;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-bottom: 18px solid;
     margin: auto;
 }
 
 .body {
-    width: 20px;
-    height: 40px;
+    width: 24px;
+    height: 50px;
     margin: auto;
-    border-radius: 10px;
+    border-radius: 12px;
+    box-shadow: inset 0 0 10px rgba(255,255,255,0.5);
 }
 
 .flame {
-    width: 8px;
-    height: 14px;
-    background: orange;
+    width: 10px;
+    height: 18px;
     margin: auto;
+    background: radial-gradient(circle, yellow, orange, red);
     border-radius: 50%;
-    animation: flame 0.2s infinite alternate;
+    animation: flameFlicker 0.15s infinite alternate;
+    box-shadow: 0 0 12px orange;
 }
 
-@keyframes flame {
-    from { height: 10px; }
-    to { height: 18px; }
+@keyframes flameFlicker {
+    from { height: 14px; }
+    to { height: 24px; }
 }
 
 .scoreDisplay {
     font-weight: bold;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
+    text-shadow: 0 0 8px cyan;
 }
 
 .scoreControls input {
-    width: 80%;
+    width: 85%;
     text-align: center;
 }
 
 .scoreControls button {
-    width: 90%;
-    margin: 3px 0;
+    width: 95%;
+    margin: 4px 0;
+}
+
+#results {
+    margin-top: 30px;
+    font-size: 20px;
+    text-shadow: 0 0 8px gold;
 }
 </style>
 </head>
 
 <body>
+
+<div class="planet planet1"></div>
+<div class="planet planet2"></div>
 
 <h1>🚀 Rocket Race</h1>
 
@@ -154,7 +217,6 @@ button {
         <option value="score">Target Score</option>
         <option value="time">Time Limit</option>
     </select>
-
     <input type="number" id="targetInput" placeholder="Score or seconds">
     <button id="startBtn">Start Game</button>
 </div>
@@ -165,7 +227,6 @@ button {
     <button id="addPlayerBtn">Add Player</button>
 </div>
 
-<div id="timerDisplay"></div>
 <div id="gameArea"></div>
 <div id="results"></div>
 
@@ -174,7 +235,6 @@ let players = [];
 let target = 0;
 let mode = "score";
 let gameActive = false;
-let timerInterval = null;
 
 document.getElementById("startBtn").addEventListener("click", startGame);
 document.getElementById("addPlayerBtn").addEventListener("click", addPlayer);
@@ -182,8 +242,6 @@ document.getElementById("addPlayerBtn").addEventListener("click", addPlayer);
 function startGame() {
     target = Number(document.getElementById("targetInput").value);
     if (!target || target <= 0) return alert("Enter valid number.");
-
-    mode = document.getElementById("mode").value;
     players.forEach(p => p.score = 0);
     gameActive = true;
     document.getElementById("results").innerHTML = "";
@@ -194,7 +252,6 @@ function addPlayer() {
     const name = document.getElementById("playerName").value.trim();
     const color = document.getElementById("playerColor").value;
     if (!name) return;
-
     players.push({ name, color, score: 0 });
     document.getElementById("playerName").value = "";
     render();
@@ -202,32 +259,24 @@ function addPlayer() {
 
 function changeScore(index, amount) {
     if (!gameActive) return;
-
     players[index].score += amount;
     if (players[index].score < 0) players[index].score = 0;
-
     updateDisplay(index);
-
-    if (mode === "score" && players[index].score >= target) {
-        endGame();
-    }
+    if (players[index].score >= target) endGame();
 }
 
 function updateDisplay(index) {
-    const scoreText = document.getElementById("score-" + index);
-    scoreText.textContent = players[index].score;
-
-    const rocket = document.getElementById("rocket-" + index);
+    document.getElementById("score-"+index).textContent = players[index].score;
+    const rocket = document.getElementById("rocket-"+index);
     let percent = players[index].score / target;
     if (percent > 1) percent = 1;
-
-    rocket.style.bottom = (percent * 380) + "px";
+    rocket.style.bottom = (percent * 410) + "px";
 }
 
 function endGame() {
     gameActive = false;
     let sorted = [...players].sort((a,b)=>b.score-a.score);
-    let html = "<h2>🏆 Results</h2>";
+    let html = "<h2>🏆 Final Results</h2>";
     sorted.forEach((p,i)=>{
         html += `<div>${i+1}. ${p.name} - ${p.score}</div>`;
     });
@@ -279,6 +328,7 @@ function render() {
         trackContainer.appendChild(track);
         trackContainer.appendChild(finishLine);
         trackContainer.appendChild(rocket);
+
         column.appendChild(trackContainer);
 
         const controls = document.createElement("div");
