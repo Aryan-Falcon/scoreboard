@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <title>Rocket Scoreboard</title>
+
 <style>
 body {
     font-family: Arial, sans-serif;
-    background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
+    background: linear-gradient(to bottom, #0b1d2a, #163447);
     color: white;
     text-align: center;
     margin: 0;
-    padding: 0;
 }
 
 h1 {
@@ -18,99 +18,131 @@ h1 {
 }
 
 .controls {
-    margin: 20px;
+    margin: 15px;
 }
 
 input, button, select {
-    padding: 8px;
-    margin: 5px;
-    border-radius: 5px;
+    padding: 6px;
+    margin: 4px;
+    border-radius: 6px;
     border: none;
 }
 
 button {
     cursor: pointer;
+    font-weight: bold;
 }
 
 #gameArea {
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    height: 400px;
+    gap: 40px;
     margin-top: 30px;
+    padding-bottom: 40px;
+    min-height: 450px;
 }
 
 .playerColumn {
-    margin: 0 20px;
-    width: 100px;
+    width: 130px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.trackContainer {
+    height: 350px;
+    width: 60px;
     position: relative;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
 }
 
 .track {
-    background: rgba(255,255,255,0.2);
-    height: 350px;
-    width: 20px;
-    margin: auto;
-    position: relative;
+    width: 16px;
+    height: 100%;
+    background: rgba(255,255,255,0.15);
     border-radius: 10px;
+    position: absolute;
 }
 
 .rocket {
-    width: 20px;
-    height: 30px;
+    width: 30px;
+    height: 40px;
     position: absolute;
     bottom: 0;
-    border-radius: 10px 10px 5px 5px;
-    transition: bottom 0.3s ease;
+    transition: bottom 0.4s ease;
+}
+
+.rocketBody {
+    width: 100%;
+    height: 30px;
+    border-radius: 12px 12px 6px 6px;
+}
+
+.flame {
+    width: 10px;
+    height: 12px;
+    background: orange;
+    margin: auto;
+    border-radius: 50%;
+    animation: flame 0.2s infinite alternate;
+}
+
+@keyframes flame {
+    from { height: 10px; }
+    to { height: 16px; }
 }
 
 .playerName {
-    margin-top: 10px;
+    font-weight: bold;
+    margin-bottom: 6px;
 }
 
 .scoreControls {
-    margin-top: 5px;
-}
-
-.scoreControls button {
     width: 100%;
-    margin: 3px 0;
 }
 
 .scoreControls input {
-    width: 90%;
+    width: 80%;
     text-align: center;
 }
+
+.scoreControls button {
+    width: 90%;
+    margin: 3px 0;
+}
+
 #timerDisplay {
-    font-size: 20px;
+    font-size: 18px;
     margin-top: 10px;
 }
+
 #results {
     margin-top: 20px;
     font-size: 18px;
 }
 </style>
 </head>
+
 <body>
 
 <h1>🚀 Rocket Scoreboard</h1>
 
 <div class="controls">
-    <label>
-        Mode:
-        <select id="mode">
-            <option value="score">Target Score</option>
-            <option value="time">Time Limit</option>
-        </select>
-    </label>
+    <select id="mode">
+        <option value="score">Target Score</option>
+        <option value="time">Time Limit</option>
+    </select>
 
-    <input type="number" id="targetInput" placeholder="Enter target score or seconds">
+    <input type="number" id="targetInput" placeholder="Enter score or seconds">
     <button onclick="startGame()">Start Game</button>
 </div>
 
 <div class="controls">
     <input type="text" id="playerName" placeholder="Player name">
-    <input type="color" id="playerColor" value="#ff0000">
+    <input type="color" id="playerColor" value="#ff4444">
     <button onclick="addPlayer()">Add Player</button>
 </div>
 
@@ -122,15 +154,18 @@ button {
 let players = [];
 let target = 0;
 let mode = "score";
+let gameActive = false;
 let timerInterval = null;
 let timeLeft = 0;
-let gameActive = false;
 
 function startGame() {
-    mode = document.getElementById("mode").value;
     target = parseInt(document.getElementById("targetInput").value);
-    if (!target || target <= 0) return alert("Enter a valid target.");
+    if (!target || target <= 0) {
+        alert("Enter valid number.");
+        return;
+    }
 
+    mode = document.getElementById("mode").value;
     players.forEach(p => p.score = 0);
     gameActive = true;
     document.getElementById("results").innerHTML = "";
@@ -138,6 +173,7 @@ function startGame() {
     if (mode === "time") {
         timeLeft = target;
         document.getElementById("timerDisplay").innerText = "Time Left: " + timeLeft + "s";
+        clearInterval(timerInterval);
         timerInterval = setInterval(() => {
             timeLeft--;
             document.getElementById("timerDisplay").innerText = "Time Left: " + timeLeft + "s";
@@ -145,17 +181,23 @@ function startGame() {
         }, 1000);
     } else {
         document.getElementById("timerDisplay").innerText = "";
+        clearInterval(timerInterval);
     }
 
     render();
 }
 
 function addPlayer() {
-    const name = document.getElementById("playerName").value;
+    const name = document.getElementById("playerName").value.trim();
     const color = document.getElementById("playerColor").value;
-    if (!name) return alert("Enter player name.");
+
+    if (!name) {
+        alert("Enter player name.");
+        return;
+    }
 
     players.push({ name, color, score: 0 });
+    document.getElementById("playerName").value = "";
     render();
 }
 
@@ -164,21 +206,21 @@ function removePlayer(index) {
     render();
 }
 
-function changeScore(index, delta) {
+function changeScore(index, amount) {
     if (!gameActive) return;
 
-    players[index].score += delta;
+    players[index].score += amount;
     if (players[index].score < 0) players[index].score = 0;
 
     if (mode === "score" && players[index].score >= target) {
         endGame();
     }
 
-    render();
+    updateRocket(index);
 }
 
 function applyCustomScore(index) {
-    const input = document.getElementById("customInput-" + index);
+    const input = document.getElementById("custom-" + index);
     const value = parseInt(input.value);
 
     if (isNaN(value)) return;
@@ -191,63 +233,86 @@ function endGame() {
     gameActive = false;
     clearInterval(timerInterval);
 
-    let sorted = [...players].sort((a,b) => b.score - a.score);
+    let sorted = [...players].sort((a,b)=>b.score - a.score);
 
-    let resultHTML = "<h2>🏆 Results</h2>";
-    sorted.forEach((p,i) => {
-        resultHTML += `<div>${i+1}. ${p.name} - ${p.score}</div>`;
+    let html = "<h2>🏆 Results</h2>";
+    sorted.forEach((p,i)=>{
+        html += `<div>${i+1}. ${p.name} - ${p.score}</div>`;
     });
 
-    document.getElementById("results").innerHTML = resultHTML;
+    document.getElementById("results").innerHTML = html;
+}
+
+function updateRocket(index) {
+    const rocket = document.getElementById("rocket-" + index);
+
+    let percent = 0;
+
+    if (mode === "score") {
+        percent = players[index].score / target;
+    } else {
+        const maxScore = Math.max(...players.map(p=>p.score),1);
+        percent = players[index].score / maxScore;
+    }
+
+    if (percent > 1) percent = 1;
+    rocket.style.bottom = (percent * 310) + "px";
 }
 
 function render() {
-    const gameArea = document.getElementById("gameArea");
-    gameArea.innerHTML = "";
+    const area = document.getElementById("gameArea");
+    area.innerHTML = "";
 
     players.forEach((player, index) => {
+
         const column = document.createElement("div");
         column.className = "playerColumn";
-
-        const track = document.createElement("div");
-        track.className = "track";
-
-        const rocket = document.createElement("div");
-        rocket.className = "rocket";
-        rocket.style.background = player.color;
-
-        let percent = 0;
-
-        if (mode === "score") {
-            percent = (player.score / target) * 100;
-        } else {
-            let maxScore = Math.max(...players.map(p=>p.score),1);
-            percent = (player.score / maxScore) * 100;
-        }
-
-        if (percent > 100) percent = 100;
-        rocket.style.bottom = (percent / 100) * 320 + "px";
-
-        track.appendChild(rocket);
-        column.appendChild(track);
 
         const name = document.createElement("div");
         name.className = "playerName";
         name.innerText = player.name + " (" + player.score + ")";
         column.appendChild(name);
 
+        const trackContainer = document.createElement("div");
+        trackContainer.className = "trackContainer";
+
+        const track = document.createElement("div");
+        track.className = "track";
+        trackContainer.appendChild(track);
+
+        const rocket = document.createElement("div");
+        rocket.className = "rocket";
+        rocket.id = "rocket-" + index;
+
+        const body = document.createElement("div");
+        body.className = "rocketBody";
+        body.style.background = player.color;
+
+        const flame = document.createElement("div");
+        flame.className = "flame";
+
+        rocket.appendChild(body);
+        rocket.appendChild(flame);
+
+        trackContainer.appendChild(rocket);
+        column.appendChild(trackContainer);
+
         const controls = document.createElement("div");
         controls.className = "scoreControls";
+
         controls.innerHTML = `
             <button onclick="changeScore(${index},1)">+1</button>
             <button onclick="changeScore(${index},-1)">-1</button>
-            <input type="number" id="customInput-${index}" placeholder="Enter +/- amount">
+            <input type="number" id="custom-${index}" placeholder="+/- amount"
+                onkeydown="if(event.key==='Enter') applyCustomScore(${index})">
             <button onclick="applyCustomScore(${index})">Apply</button>
             <button onclick="removePlayer(${index})">Remove</button>
         `;
-        column.appendChild(controls);
 
-        gameArea.appendChild(column);
+        column.appendChild(controls);
+        area.appendChild(column);
+
+        updateRocket(index);
     });
 }
 </script>
