@@ -15,7 +15,7 @@ body{
   position:relative;
 }
 
-/* Star field */
+/* Star background */
 body::before{
   content:"";
   position:fixed;
@@ -32,7 +32,12 @@ body::before{
   to{transform:translate(-500px,-500px);}
 }
 
-h1{text-align:center;padding:20px;font-size:2.6em;text-shadow:0 0 20px cyan;}
+h1{
+  text-align:center;
+  padding:20px;
+  font-size:2.6em;
+  text-shadow:0 0 20px cyan;
+}
 
 .controls{
   display:flex;
@@ -84,7 +89,7 @@ button:hover{opacity:0.85}
   box-shadow:0 0 20px rgba(0,255,255,0.3);
 }
 
-/* Custom rocket shape */
+/* Rocket */
 .rocket{
   position:absolute;
   bottom:0;
@@ -97,7 +102,6 @@ button:hover{opacity:0.85}
 .rocket-body{
   width:35px;
   height:55px;
-  background:red;
   border-radius:20px 20px 10px 10px;
   position:relative;
 }
@@ -129,10 +133,10 @@ button:hover{opacity:0.85}
 .scoreControls{display:flex;flex-direction:column;gap:6px;align-items:center;}
 .scoreControls input{width:80px;text-align:center;}
 
-/* Better meteors */
+/* Meteors bottom-right → top-left */
 .meteor{
   position:fixed;
-  top:-80px;
+  bottom:-80px;
   right:-80px;
   width:6px;
   height:120px;
@@ -140,13 +144,12 @@ button:hover{opacity:0.85}
   border-radius:50%;
   box-shadow:0 0 20px orange;
   transform:rotate(-45deg);
-  animation:meteorFall 1.5s linear forwards;
+  animation:meteorRise 1.5s linear forwards;
   pointer-events:none;
 }
-
-@keyframes meteorFall{
+@keyframes meteorRise{
   to{
-    transform:translate(-1200px,1200px) rotate(-45deg);
+    transform:translate(-1200px,-1200px) rotate(-45deg);
     opacity:0;
   }
 }
@@ -184,7 +187,6 @@ button:hover{opacity:0.85}
   animation:rise 1s ease forwards;
   transform:translateY(200px);
 }
-
 @keyframes rise{
   to{transform:translateY(0);}
 }
@@ -320,7 +322,7 @@ function startGame(){
 function spawnMeteor(){
   const meteor=document.createElement("div");
   meteor.className="meteor";
-  meteor.style.right=Math.random()*window.innerWidth+"px";
+  meteor.style.right=Math.random()*200+"px";
   document.body.appendChild(meteor);
   setTimeout(()=>meteor.remove(),1500);
 }
