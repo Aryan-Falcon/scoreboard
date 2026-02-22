@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Rocket Race Scoreboard</title>
+<title>Rocket Race</title>
 
 <style>
 body {
@@ -11,10 +11,9 @@ body {
     color: white;
     text-align: center;
     background: radial-gradient(circle at bottom, #0b1d2a 0%, #000814 80%);
-    overflow-x: hidden;
 }
 
-/* Star background */
+/* Animated stars */
 body::before {
     content: "";
     position: fixed;
@@ -22,22 +21,18 @@ body::before {
     height: 200%;
     background-image: radial-gradient(white 1px, transparent 1px);
     background-size: 50px 50px;
-    animation: stars 120s linear infinite;
+    animation: stars 150s linear infinite;
     opacity: 0.2;
     z-index: -1;
 }
 
 @keyframes stars {
     from { transform: translate(0,0); }
-    to { transform: translate(-500px,-500px); }
-}
-
-h1 {
-    margin-top: 20px;
+    to { transform: translate(-600px,-600px); }
 }
 
 .controls {
-    margin: 10px;
+    margin: 12px;
 }
 
 input, button, select {
@@ -45,6 +40,7 @@ input, button, select {
     margin: 4px;
     border-radius: 6px;
     border: none;
+    font-size: 14px;
 }
 
 button {
@@ -56,20 +52,20 @@ button {
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    gap: 50px;
+    gap: 60px;
     margin-top: 30px;
-    min-height: 500px;
+    min-height: 520px;
 }
 
 .playerColumn {
-    width: 140px;
+    width: 150px;
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
 .trackContainer {
-    height: 400px;
+    height: 420px;
     width: 70px;
     position: relative;
     margin-bottom: 10px;
@@ -89,7 +85,7 @@ button {
     position: absolute;
     top: 0;
     width: 100%;
-    height: 5px;
+    height: 4px;
     background: yellow;
 }
 
@@ -99,7 +95,7 @@ button {
     width: 40px;
     left: 50%;
     transform: translateX(-50%);
-    transition: bottom 0.5s ease;
+    transition: bottom 0.4s ease;
 }
 
 .nose {
@@ -107,7 +103,7 @@ button {
     height: 0;
     border-left: 10px solid transparent;
     border-right: 10px solid transparent;
-    border-bottom: 15px solid red;
+    border-bottom: 15px solid;
     margin: auto;
 }
 
@@ -118,17 +114,9 @@ button {
     border-radius: 10px;
 }
 
-.fins {
-    width: 40px;
-    height: 10px;
-    background: inherit;
-    border-radius: 5px;
-    margin: auto;
-}
-
 .flame {
     width: 8px;
-    height: 12px;
+    height: 14px;
     background: orange;
     margin: auto;
     border-radius: 50%;
@@ -140,7 +128,7 @@ button {
     to { height: 18px; }
 }
 
-.playerName {
+.scoreDisplay {
     font-weight: bold;
     margin-bottom: 6px;
 }
@@ -153,16 +141,6 @@ button {
 .scoreControls button {
     width: 90%;
     margin: 3px 0;
-}
-
-#timerDisplay {
-    margin-top: 10px;
-    font-size: 18px;
-}
-
-#results {
-    margin-top: 20px;
-    font-size: 18px;
 }
 </style>
 </head>
@@ -197,48 +175,24 @@ let target = 0;
 let mode = "score";
 let gameActive = false;
 let timerInterval = null;
-let timeLeft = 0;
 
 document.getElementById("startBtn").addEventListener("click", startGame);
 document.getElementById("addPlayerBtn").addEventListener("click", addPlayer);
 
 function startGame() {
     target = Number(document.getElementById("targetInput").value);
-    if (!target || target <= 0) {
-        alert("Enter valid number.");
-        return;
-    }
+    if (!target || target <= 0) return alert("Enter valid number.");
 
     mode = document.getElementById("mode").value;
     players.forEach(p => p.score = 0);
     gameActive = true;
     document.getElementById("results").innerHTML = "";
-
-    if (mode === "time") {
-        timeLeft = target;
-        updateTimer();
-        clearInterval(timerInterval);
-        timerInterval = setInterval(() => {
-            timeLeft--;
-            updateTimer();
-            if (timeLeft <= 0) endGame();
-        }, 1000);
-    } else {
-        document.getElementById("timerDisplay").innerText = "";
-        clearInterval(timerInterval);
-    }
-
     render();
-}
-
-function updateTimer() {
-    document.getElementById("timerDisplay").innerText = "Time Left: " + timeLeft + "s";
 }
 
 function addPlayer() {
     const name = document.getElementById("playerName").value.trim();
     const color = document.getElementById("playerColor").value;
-
     if (!name) return;
 
     players.push({ name, color, score: 0 });
@@ -252,48 +206,32 @@ function changeScore(index, amount) {
     players[index].score += amount;
     if (players[index].score < 0) players[index].score = 0;
 
-    updateRocket(index);
+    updateDisplay(index);
 
     if (mode === "score" && players[index].score >= target) {
         endGame();
     }
 }
 
-function applyCustomScore(index) {
-    const input = document.getElementById("custom-" + index);
-    const value = Number(input.value);
+function updateDisplay(index) {
+    const scoreText = document.getElementById("score-" + index);
+    scoreText.textContent = players[index].score;
 
-    if (!value) return;
+    const rocket = document.getElementById("rocket-" + index);
+    let percent = players[index].score / target;
+    if (percent > 1) percent = 1;
 
-    changeScore(index, value);
-    input.value = "";
+    rocket.style.bottom = (percent * 380) + "px";
 }
 
 function endGame() {
     gameActive = false;
-    clearInterval(timerInterval);
-
     let sorted = [...players].sort((a,b)=>b.score-a.score);
     let html = "<h2>🏆 Results</h2>";
     sorted.forEach((p,i)=>{
         html += `<div>${i+1}. ${p.name} - ${p.score}</div>`;
     });
     document.getElementById("results").innerHTML = html;
-}
-
-function updateRocket(index) {
-    const rocket = document.getElementById("rocket-"+index);
-
-    let percent = 0;
-    if (mode === "score") {
-        percent = players[index].score / target;
-    } else {
-        const maxScore = Math.max(...players.map(p=>p.score),1);
-        percent = players[index].score / maxScore;
-    }
-
-    if (percent > 1) percent = 1;
-    rocket.style.bottom = (percent * 360) + "px";
 }
 
 function render() {
@@ -305,10 +243,10 @@ function render() {
         const column = document.createElement("div");
         column.className = "playerColumn";
 
-        const name = document.createElement("div");
-        name.className = "playerName";
-        name.innerText = player.name + " (" + player.score + ")";
-        column.appendChild(name);
+        const scoreDisplay = document.createElement("div");
+        scoreDisplay.className = "scoreDisplay";
+        scoreDisplay.innerHTML = `${player.name}: <span id="score-${index}">${player.score}</span>`;
+        column.appendChild(scoreDisplay);
 
         const trackContainer = document.createElement("div");
         trackContainer.className = "trackContainer";
@@ -341,29 +279,31 @@ function render() {
         trackContainer.appendChild(track);
         trackContainer.appendChild(finishLine);
         trackContainer.appendChild(rocket);
-
         column.appendChild(trackContainer);
 
         const controls = document.createElement("div");
         controls.className = "scoreControls";
 
         const plus = document.createElement("button");
-        plus.innerText = "+1";
-        plus.onclick = () => changeScore(index,1);
+        plus.textContent = "+1";
+        plus.addEventListener("click", () => changeScore(index,1));
 
         const minus = document.createElement("button");
-        minus.innerText = "-1";
-        minus.onclick = () => changeScore(index,-1);
+        minus.textContent = "-1";
+        minus.addEventListener("click", () => changeScore(index,-1));
 
         const input = document.createElement("input");
         input.type = "number";
-        input.inputMode = "numeric";
         input.placeholder = "+/- amount";
-        input.id = "custom-"+index;
 
         const apply = document.createElement("button");
-        apply.innerText = "Apply";
-        apply.onclick = () => applyCustomScore(index);
+        apply.textContent = "Apply";
+        apply.addEventListener("click", () => {
+            const value = Number(input.value);
+            if (!value) return;
+            changeScore(index, value);
+            input.value = "";
+        });
 
         controls.appendChild(plus);
         controls.appendChild(minus);
@@ -373,7 +313,7 @@ function render() {
         column.appendChild(controls);
         area.appendChild(column);
 
-        updateRocket(index);
+        updateDisplay(index);
     });
 }
 </script>
