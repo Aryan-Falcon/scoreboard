@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Rocket Race Premium</title>
+<title>Rocket Race Ultra</title>
 
 <style>
 body {
@@ -11,213 +11,225 @@ body {
     color: white;
     text-align: center;
     overflow-x: hidden;
-    background: linear-gradient(to bottom, #020111 0%, #191621 60%, #000814 100%);
+    background: radial-gradient(circle at 50% 80%, #1b0033 0%, #000814 60%, #000 100%);
 }
 
-/* TWINKLING STARS */
-body::before {
+/* PARALLAX STARFIELD */
+body::before,
+body::after {
     content: "";
     position: fixed;
-    width: 200%;
-    height: 200%;
-    background-image:
-        radial-gradient(white 1px, transparent 1px),
-        radial-gradient(white 1px, transparent 1px);
-    background-size: 80px 80px, 120px 120px;
-    animation: starsMove 200s linear infinite;
-    opacity: 0.3;
+    width: 300%;
+    height: 300%;
+    background-image: radial-gradient(white 1px, transparent 1px);
+    background-size: 100px 100px;
+    opacity: 0.25;
     z-index: -2;
+    animation: starsMove 250s linear infinite;
+}
+
+body::after {
+    background-size: 60px 60px;
+    opacity: 0.15;
+    animation-duration: 180s;
 }
 
 @keyframes starsMove {
     from { transform: translate(0,0); }
-    to { transform: translate(-800px,-800px); }
+    to { transform: translate(-1000px,-1000px); }
 }
 
-/* FLOATING PLANETS */
-.planet {
-    position: fixed;
-    border-radius: 50%;
-    opacity: 0.2;
-    z-index: -1;
-    animation: floatPlanet 30s ease-in-out infinite alternate;
-}
-
-.planet1 {
-    width: 200px;
-    height: 200px;
-    background: radial-gradient(circle at 30% 30%, #6a00ff, #2a004f);
-    top: 60px;
-    left: -80px;
-}
-
-.planet2 {
-    width: 150px;
-    height: 150px;
-    background: radial-gradient(circle at 30% 30%, #00c3ff, #00394f);
-    bottom: 50px;
-    right: -60px;
-}
-
-@keyframes floatPlanet {
-    from { transform: translateY(0); }
-    to { transform: translateY(40px); }
-}
-
-/* GLASS PANELS */
+/* GLASS CONTROLS */
 .controls {
     margin: 15px auto;
-    padding: 10px;
+    padding: 12px 20px;
     width: fit-content;
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(12px);
     background: rgba(255,255,255,0.05);
-    border-radius: 12px;
-    box-shadow: 0 0 15px rgba(0,255,255,0.1);
+    border-radius: 16px;
+    box-shadow: 0 0 20px rgba(0,255,255,0.15);
 }
 
 input, button, select {
-    padding: 7px;
+    padding: 8px;
     margin: 4px;
-    border-radius: 6px;
+    border-radius: 8px;
     border: none;
-    font-size: 14px;
 }
 
 button {
     cursor: pointer;
     font-weight: bold;
-    background: linear-gradient(45deg, #00c3ff, #6a00ff);
+    background: linear-gradient(45deg, #00f0ff, #8a2eff);
     color: white;
-    box-shadow: 0 0 10px rgba(0,255,255,0.4);
+    box-shadow: 0 0 12px rgba(0,255,255,0.6);
     transition: 0.2s;
 }
 
 button:hover {
-    transform: scale(1.05);
+    transform: scale(1.08);
 }
 
 #gameArea {
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    gap: 70px;
-    margin-top: 40px;
-    min-height: 550px;
+    gap: 80px;
+    margin-top: 50px;
+    min-height: 600px;
 }
 
 .playerColumn {
-    width: 160px;
+    width: 180px;
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
 .trackContainer {
-    height: 450px;
-    width: 80px;
+    height: 480px;
+    width: 100px;
     position: relative;
     margin-bottom: 15px;
 }
 
 .track {
     position: absolute;
-    width: 10px;
+    width: 12px;
     height: 100%;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(255,255,255,0.15);
-    border-radius: 6px;
-    box-shadow: 0 0 10px rgba(255,255,255,0.1);
+    background: linear-gradient(to top, #00f0ff33, #8a2eff33);
+    border-radius: 8px;
+    box-shadow: 0 0 20px #00f0ff55;
 }
 
 .finishLine {
     position: absolute;
     top: 0;
     width: 100%;
-    height: 6px;
-    background: linear-gradient(90deg, yellow, orange);
-    box-shadow: 0 0 15px yellow;
+    height: 8px;
+    background: linear-gradient(90deg, gold, orange);
+    box-shadow: 0 0 20px gold;
 }
 
 /* ROCKET */
 .rocket {
     position: absolute;
     bottom: 0;
-    width: 50px;
+    width: 60px;
     left: 50%;
     transform: translateX(-50%);
-    transition: bottom 0.6s cubic-bezier(.25,.8,.25,1);
+    transition: bottom 0.7s cubic-bezier(.25,.8,.25,1);
 }
 
 .nose {
     width: 0;
     height: 0;
-    border-left: 12px solid transparent;
-    border-right: 12px solid transparent;
-    border-bottom: 18px solid;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-bottom: 25px solid;
     margin: auto;
 }
 
 .body {
-    width: 24px;
-    height: 50px;
+    width: 30px;
+    height: 70px;
     margin: auto;
-    border-radius: 12px;
-    box-shadow: inset 0 0 10px rgba(255,255,255,0.5);
+    border-radius: 15px;
+    position: relative;
+    box-shadow: inset 0 0 20px rgba(255,255,255,0.7),
+                0 0 25px rgba(255,255,255,0.4);
+}
+
+.window {
+    width: 14px;
+    height: 14px;
+    background: cyan;
+    border-radius: 50%;
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 10px cyan;
 }
 
 .flame {
-    width: 10px;
-    height: 18px;
+    width: 14px;
+    height: 25px;
     margin: auto;
     background: radial-gradient(circle, yellow, orange, red);
     border-radius: 50%;
-    animation: flameFlicker 0.15s infinite alternate;
-    box-shadow: 0 0 12px orange;
+    animation: flameFlicker 0.12s infinite alternate;
+    box-shadow: 0 0 20px orange;
 }
 
 @keyframes flameFlicker {
-    from { height: 14px; }
-    to { height: 24px; }
+    from { height: 18px; }
+    to { height: 35px; }
 }
 
 .scoreDisplay {
     font-weight: bold;
+    font-size: 18px;
     margin-bottom: 8px;
-    text-shadow: 0 0 8px cyan;
+    text-shadow: 0 0 10px cyan;
 }
 
-.scoreControls input {
-    width: 85%;
+/* RESULTS OVERLAY */
+#resultsOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.resultsBox {
+    background: linear-gradient(145deg, #0f0020, #1a0033);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 0 40px gold;
+    width: 400px;
     text-align: center;
+    animation: popIn 0.4s ease;
 }
 
-.scoreControls button {
-    width: 95%;
-    margin: 4px 0;
+@keyframes popIn {
+    from { transform: scale(0.7); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
 }
 
-#results {
-    margin-top: 30px;
+.resultsBox h2 {
+    font-size: 32px;
+    margin-bottom: 20px;
+    color: gold;
+    text-shadow: 0 0 15px gold;
+}
+
+.podium {
+    margin: 10px 0;
     font-size: 20px;
-    text-shadow: 0 0 8px gold;
 }
+
+.gold { color: gold; }
+.silver { color: silver; }
+.bronze { color: #cd7f32; }
+
 </style>
 </head>
 
 <body>
 
-<div class="planet planet1"></div>
-<div class="planet planet2"></div>
-
-<h1>🚀 Rocket Race</h1>
+<h1>🚀 Rocket Race Ultra</h1>
 
 <div class="controls">
     <select id="mode">
         <option value="score">Target Score</option>
-        <option value="time">Time Limit</option>
     </select>
-    <input type="number" id="targetInput" placeholder="Score or seconds">
+    <input type="number" id="targetInput" placeholder="Enter target score">
     <button id="startBtn">Start Game</button>
 </div>
 
@@ -228,141 +240,129 @@ button:hover {
 </div>
 
 <div id="gameArea"></div>
-<div id="results"></div>
+
+<div id="resultsOverlay">
+    <div class="resultsBox">
+        <h2>🏆 Final Results</h2>
+        <div id="podiumResults"></div>
+        <button onclick="location.reload()">Restart</button>
+    </div>
+</div>
 
 <script>
 let players = [];
 let target = 0;
-let mode = "score";
 let gameActive = false;
 
-document.getElementById("startBtn").addEventListener("click", startGame);
-document.getElementById("addPlayerBtn").addEventListener("click", addPlayer);
+document.getElementById("startBtn").onclick = startGame;
+document.getElementById("addPlayerBtn").onclick = addPlayer;
 
-function startGame() {
+function startGame(){
     target = Number(document.getElementById("targetInput").value);
-    if (!target || target <= 0) return alert("Enter valid number.");
-    players.forEach(p => p.score = 0);
+    if(!target || target<=0) return alert("Enter valid score.");
+    players.forEach(p=>p.score=0);
     gameActive = true;
-    document.getElementById("results").innerHTML = "";
     render();
 }
 
-function addPlayer() {
+function addPlayer(){
     const name = document.getElementById("playerName").value.trim();
     const color = document.getElementById("playerColor").value;
-    if (!name) return;
-    players.push({ name, color, score: 0 });
-    document.getElementById("playerName").value = "";
+    if(!name) return;
+    players.push({name,color,score:0});
+    document.getElementById("playerName").value="";
     render();
 }
 
-function changeScore(index, amount) {
-    if (!gameActive) return;
-    players[index].score += amount;
-    if (players[index].score < 0) players[index].score = 0;
+function changeScore(index,amount){
+    if(!gameActive) return;
+    players[index].score+=amount;
+    if(players[index].score<0) players[index].score=0;
     updateDisplay(index);
-    if (players[index].score >= target) endGame();
+    if(players[index].score>=target) endGame();
 }
 
-function updateDisplay(index) {
+function updateDisplay(index){
     document.getElementById("score-"+index).textContent = players[index].score;
-    const rocket = document.getElementById("rocket-"+index);
-    let percent = players[index].score / target;
-    if (percent > 1) percent = 1;
-    rocket.style.bottom = (percent * 410) + "px";
+    const rocket=document.getElementById("rocket-"+index);
+    let percent=players[index].score/target;
+    if(percent>1) percent=1;
+    rocket.style.bottom=(percent*440)+"px";
 }
 
-function endGame() {
-    gameActive = false;
-    let sorted = [...players].sort((a,b)=>b.score-a.score);
-    let html = "<h2>🏆 Final Results</h2>";
+function endGame(){
+    gameActive=false;
+    let sorted=[...players].sort((a,b)=>b.score-a.score);
+    const podium=document.getElementById("podiumResults");
+    podium.innerHTML="";
     sorted.forEach((p,i)=>{
-        html += `<div>${i+1}. ${p.name} - ${p.score}</div>`;
+        let cls=i==0?"gold":i==1?"silver":i==2?"bronze":"";
+        podium.innerHTML+=`<div class="podium ${cls}">${i+1}. ${p.name} - ${p.score}</div>`;
     });
-    document.getElementById("results").innerHTML = html;
+    document.getElementById("resultsOverlay").style.display="flex";
 }
 
-function render() {
-    const area = document.getElementById("gameArea");
-    area.innerHTML = "";
-
+function render(){
+    const area=document.getElementById("gameArea");
+    area.innerHTML="";
     players.forEach((player,index)=>{
+        const column=document.createElement("div");
+        column.className="playerColumn";
 
-        const column = document.createElement("div");
-        column.className = "playerColumn";
+        const score=document.createElement("div");
+        score.className="scoreDisplay";
+        score.innerHTML=`${player.name}: <span id="score-${index}">${player.score}</span>`;
+        column.appendChild(score);
 
-        const scoreDisplay = document.createElement("div");
-        scoreDisplay.className = "scoreDisplay";
-        scoreDisplay.innerHTML = `${player.name}: <span id="score-${index}">${player.score}</span>`;
-        column.appendChild(scoreDisplay);
+        const trackContainer=document.createElement("div");
+        trackContainer.className="trackContainer";
 
-        const trackContainer = document.createElement("div");
-        trackContainer.className = "trackContainer";
+        const track=document.createElement("div");
+        track.className="track";
 
-        const track = document.createElement("div");
-        track.className = "track";
+        const finish=document.createElement("div");
+        finish.className="finishLine";
 
-        const finishLine = document.createElement("div");
-        finishLine.className = "finishLine";
+        const rocket=document.createElement("div");
+        rocket.className="rocket";
+        rocket.id="rocket-"+index;
 
-        const rocket = document.createElement("div");
-        rocket.className = "rocket";
-        rocket.id = "rocket-"+index;
+        const nose=document.createElement("div");
+        nose.className="nose";
+        nose.style.borderBottomColor=player.color;
 
-        const nose = document.createElement("div");
-        nose.className = "nose";
-        nose.style.borderBottomColor = player.color;
+        const body=document.createElement("div");
+        body.className="body";
+        body.style.background=player.color;
 
-        const body = document.createElement("div");
-        body.className = "body";
-        body.style.background = player.color;
+        const windowDiv=document.createElement("div");
+        windowDiv.className="window";
 
-        const flame = document.createElement("div");
-        flame.className = "flame";
+        const flame=document.createElement("div");
+        flame.className="flame";
 
+        body.appendChild(windowDiv);
         rocket.appendChild(nose);
         rocket.appendChild(body);
         rocket.appendChild(flame);
 
         trackContainer.appendChild(track);
-        trackContainer.appendChild(finishLine);
+        trackContainer.appendChild(finish);
         trackContainer.appendChild(rocket);
-
         column.appendChild(trackContainer);
 
-        const controls = document.createElement("div");
-        controls.className = "scoreControls";
+        const plus=document.createElement("button");
+        plus.textContent="+1";
+        plus.onclick=()=>changeScore(index,1);
 
-        const plus = document.createElement("button");
-        plus.textContent = "+1";
-        plus.addEventListener("click", () => changeScore(index,1));
+        const minus=document.createElement("button");
+        minus.textContent="-1";
+        minus.onclick=()=>changeScore(index,-1);
 
-        const minus = document.createElement("button");
-        minus.textContent = "-1";
-        minus.addEventListener("click", () => changeScore(index,-1));
+        column.appendChild(plus);
+        column.appendChild(minus);
 
-        const input = document.createElement("input");
-        input.type = "number";
-        input.placeholder = "+/- amount";
-
-        const apply = document.createElement("button");
-        apply.textContent = "Apply";
-        apply.addEventListener("click", () => {
-            const value = Number(input.value);
-            if (!value) return;
-            changeScore(index, value);
-            input.value = "";
-        });
-
-        controls.appendChild(plus);
-        controls.appendChild(minus);
-        controls.appendChild(input);
-        controls.appendChild(apply);
-
-        column.appendChild(controls);
         area.appendChild(column);
-
         updateDisplay(index);
     });
 }
