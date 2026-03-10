@@ -588,6 +588,30 @@ input[type="color"] {
       <button class="btn btn-end" onclick="endGame()">■ End Game</button>
     </div>
   </div>
+
+  <div style="display:flex;gap:14px;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid rgba(0,229,255,0.1);flex-wrap:wrap;">
+    <span class="panel-title" style="margin:0">⬡ Audio</span>
+    <button class="btn btn-primary" id="musicToggle" onclick="toggleMusic()" style="padding:7px 14px;font-size:0.65em">♫ MUSIC: ON</button>
+    <button class="btn btn-primary" id="sfxToggle" onclick="toggleSfx()" style="padding:7px 14px;font-size:0.65em">🔊 SFX: ON</button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <label style="font-size:0.72em;letter-spacing:0.15em;color:rgba(255,255,255,0.5);text-transform:uppercase">Music Vol</label>
+      <input type="range" id="musicVol" min="0" max="100" value="30" oninput="setMusicVol(this.value)"
+        style="width:90px;accent-color:var(--accent);cursor:pointer">
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <label style="font-size:0.72em;letter-spacing:0.15em;color:rgba(255,255,255,0.5);text-transform:uppercase">SFX Vol</label>
+      <input type="range" id="sfxVol" min="0" max="100" value="60" oninput="setSfxVol(this.value)"
+        style="width:90px;accent-color:var(--accent2);cursor:pointer">
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <label style="font-size:0.72em;letter-spacing:0.15em;color:rgba(255,255,255,0.5);text-transform:uppercase">Track</label>
+      <select id="trackSelect" onchange="changeTrack(this.value)" style="padding:7px 10px;font-size:0.85em;width:auto">
+        <option value="ambient">Deep Space Ambient</option>
+        <option value="pulse">Pulse Drive</option>
+        <option value="tension">Tension Grid</option>
+      </select>
+    </div>
+  </div>
 </div>
 
 <div id="statusBar">AWAITING LAUNCH</div>
@@ -1199,6 +1223,569 @@ function toast(msg) {
 document.getElementById('playerNameInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') addPlayer();
 });
+
+/* ════════════════════════════════════════════
+   AUDIO ENGINE — 100% Web Audio API (no files)
+════════════════════════════════════════════ */
+let audioCtx = null;
+let masterGain = null;
+let musicGain = null;
+let sfxGain = null;
+let musicNodes = [];           // all nodes for current track
+let musicScheduled = false;
+let musicEnabled = true;
+let sfxEnabled = true;
+let currentTrack = 'ambient';
+let musicVolume = 0.30;
+let sfxVolume = 0.60;
+
+function getCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain(); masterGain.gain.value = 1;
+    masterGain.connect(audioCtx.destination);
+    musicGain = audioCtx.createGain(); musicGain.gain.value = musicVolume;
+    musicGain.connect(masterGain);
+    sfxGain = audioCtx.createGain(); sfxGain.gain.value = sfxVolume;
+    sfxGain.connect(masterGain);
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+/* ── Utility: make a simple oscillator burst ── */
+function playTone(freq, type, dur, vol, attack=0.01, release=0.1, destination=null) {
+  const ctx = getCtx();
+  const osc = ctx.createOscillator();
+  const env = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, ctx.currentTime);
+  env.gain.setValueAtTime(0, ctx.currentTime);
+  env.gain.linearRampToValueAtTime(vol, ctx.currentTime + attack);
+  env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+  osc.connect(env);
+  env.connect(destination || sfxGain);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + dur + release);
+  return { osc, env };
+}
+
+/* ── Noise buffer (for impacts/explosions) ── */
+function makeNoise(dur, vol, lpFreq) {
+  const ctx = getCtx();
+  const bufSize = ctx.sampleRate * dur;
+  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass'; lp.frequency.value = lpFreq;
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(vol, ctx.currentTime);
+  env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+  src.connect(lp); lp.connect(env); env.connect(sfxGain);
+  src.start(); src.stop(ctx.currentTime + dur);
+}
+
+/* ══════════════════════
+   SOUND EFFECTS
+══════════════════════ */
+function sfx_scoreUp() {
+  if (!sfxEnabled) return; getCtx();
+  // Rising two-tone chime
+  playTone(440, 'sine', 0.18, 0.4, 0.01, 0.15);
+  setTimeout(() => playTone(660, 'sine', 0.22, 0.35, 0.01, 0.18), 90);
+  setTimeout(() => playTone(880, 'triangle', 0.28, 0.3, 0.01, 0.2), 170);
+}
+
+function sfx_scoreDown() {
+  if (!sfxEnabled) return; getCtx();
+  // Descending thud
+  playTone(180, 'sawtooth', 0.25, 0.3, 0.01, 0.2);
+  setTimeout(() => playTone(120, 'sawtooth', 0.3, 0.35, 0.01, 0.25), 80);
+  setTimeout(() => playTone(80, 'square', 0.2, 0.25, 0.005, 0.3), 160);
+}
+
+function sfx_asteroidImpact() {
+  if (!sfxEnabled) return; getCtx();
+  // Low boom + crackle
+  makeNoise(0.55, 0.55, 800);
+  playTone(60, 'sine', 0.4, 0.5, 0.005, 0.35);
+  playTone(40, 'sine', 0.55, 0.4, 0.005, 0.5);
+  setTimeout(() => makeNoise(0.2, 0.3, 400), 80);
+}
+
+function sfx_rocketBoost() {
+  if (!sfxEnabled) return; getCtx();
+  // Whoosh upward
+  const ctx = getCtx();
+  const osc = ctx.createOscillator();
+  const env = ctx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(120, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.3);
+  env.gain.setValueAtTime(0.3, ctx.currentTime);
+  env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+  osc.connect(env); env.connect(sfxGain);
+  osc.start(); osc.stop(ctx.currentTime + 0.4);
+}
+
+function sfx_addPlayer() {
+  if (!sfxEnabled) return; getCtx();
+  playTone(523, 'sine', 0.15, 0.3, 0.01, 0.12);
+  setTimeout(() => playTone(784, 'sine', 0.18, 0.25, 0.01, 0.15), 100);
+}
+
+function sfx_gameStart() {
+  if (!sfxEnabled) return; getCtx();
+  // Ascending fanfare
+  const notes = [261, 329, 392, 523, 659, 784];
+  notes.forEach((f, i) => {
+    setTimeout(() => playTone(f, 'triangle', 0.25, 0.35, 0.01, 0.2), i * 80);
+  });
+  setTimeout(() => makeNoise(0.15, 0.2, 2000), 480);
+}
+
+function sfx_victory() {
+  if (!sfxEnabled) return; getCtx();
+  // Grand fanfare chord progression
+  const seq = [
+    [523, 659, 784],
+    [587, 740, 880],
+    [659, 830, 988],
+    [784, 988, 1175]
+  ];
+  seq.forEach((chord, ci) => {
+    chord.forEach(f => {
+      setTimeout(() => playTone(f, 'triangle', 0.5, 0.2, 0.02, 0.4), ci * 200);
+    });
+  });
+  setTimeout(() => {
+    makeNoise(0.5, 0.25, 3000);
+    playTone(1047, 'sine', 0.8, 0.4, 0.02, 0.7);
+  }, 800);
+}
+
+function sfx_timerTick() {
+  if (!sfxEnabled) return; getCtx();
+  playTone(880, 'square', 0.06, 0.08, 0.002, 0.05);
+}
+
+function sfx_timerWarn() {
+  if (!sfxEnabled) return; getCtx();
+  playTone(660, 'square', 0.12, 0.15, 0.005, 0.1);
+  setTimeout(() => playTone(440, 'square', 0.1, 0.12, 0.005, 0.09), 130);
+}
+
+function sfx_buttonClick() {
+  if (!sfxEnabled) return; getCtx();
+  playTone(300, 'sine', 0.08, 0.15, 0.005, 0.07);
+}
+
+function sfx_meteorPass() {
+  if (!sfxEnabled) return; getCtx();
+  const ctx = getCtx();
+  const osc = ctx.createOscillator();
+  const env = ctx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(800, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.6);
+  env.gain.setValueAtTime(0, ctx.currentTime);
+  env.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 0.05);
+  env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.65);
+  osc.connect(env); env.connect(sfxGain);
+  osc.start(); osc.stop(ctx.currentTime + 0.7);
+}
+
+/* ══════════════════════════════════════════
+   BACKGROUND MUSIC — Three procedural tracks
+══════════════════════════════════════════ */
+
+function stopMusic() {
+  musicNodes.forEach(n => { try { n.stop ? n.stop() : null; } catch(e){} });
+  musicNodes = [];
+  musicScheduled = false;
+}
+
+function startMusic() {
+  if (!musicEnabled) return;
+  stopMusic();
+  getCtx();
+  const tracks = { ambient: playAmbient, pulse: playPulse, tension: playTension };
+  (tracks[currentTrack] || playAmbient)();
+  musicScheduled = true;
+}
+
+/* ─── Track 1: Deep Space Ambient ─── */
+function playAmbient() {
+  const ctx = getCtx();
+
+  // Drone pad — slow evolving chord
+  function makeDrone(freq, detune, vol) {
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    const env = ctx.createGain();
+    const lp = ctx.createBiquadFilter();
+
+    osc1.type = 'sine'; osc1.frequency.value = freq;
+    osc2.type = 'sine'; osc2.frequency.value = freq * 1.005 + detune;
+    lfo.type = 'sine'; lfo.frequency.value = 0.08 + Math.random() * 0.05;
+    lfoGain.gain.value = freq * 0.008;
+    lp.type = 'lowpass'; lp.frequency.value = 600;
+    lp.Q.value = 2;
+    env.gain.value = vol;
+
+    lfo.connect(lfoGain); lfoGain.connect(osc1.frequency); lfoGain.connect(osc2.frequency);
+    osc1.connect(lp); osc2.connect(lp); lp.connect(env); env.connect(musicGain);
+    osc1.start(); osc2.start(); lfo.start();
+    musicNodes.push(osc1, osc2, lfo);
+  }
+
+  // Evolving chord: C2, G2, E3, B3
+  makeDrone(65.4, 0, 0.18);
+  makeDrone(98, 0.3, 0.14);
+  makeDrone(164.8, -0.2, 0.10);
+  makeDrone(246.9, 0.1, 0.07);
+
+  // Slow melodic arpeggio
+  const arpNotes = [261.6, 329.6, 392, 493.9, 392, 329.6];
+  let arpIdx = 0;
+  function scheduleArp() {
+    if (!musicEnabled || currentTrack !== 'ambient') return;
+    const freq = arpNotes[arpIdx % arpNotes.length];
+    arpIdx++;
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    const rev = ctx.createDelay(1.5);
+    const revGain = ctx.createGain();
+    rev.delayTime.value = 0.45;
+    revGain.gain.value = 0.28;
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    env.gain.setValueAtTime(0, ctx.currentTime);
+    env.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.05);
+    env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.8);
+    osc.connect(env);
+    env.connect(musicGain);
+    env.connect(rev); rev.connect(revGain); revGain.connect(musicGain);
+    osc.start(); osc.stop(ctx.currentTime + 2);
+    musicNodes.push(osc);
+    const interval = (arpIdx % 2 === 0) ? 1800 : 2400;
+    setTimeout(scheduleArp, interval);
+  }
+  setTimeout(scheduleArp, 400);
+
+  // Sub bass pulse (slow)
+  function schedBass() {
+    if (!musicEnabled || currentTrack !== 'ambient') return;
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = 'sine'; osc.frequency.value = 32.7;
+    env.gain.setValueAtTime(0.22, ctx.currentTime);
+    env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.5);
+    osc.connect(env); env.connect(musicGain);
+    osc.start(); osc.stop(ctx.currentTime + 2.6);
+    musicNodes.push(osc);
+    setTimeout(schedBass, 3200);
+  }
+  setTimeout(schedBass, 1000);
+}
+
+/* ─── Track 2: Pulse Drive (upbeat electronic) ─── */
+function playPulse() {
+  const ctx = getCtx();
+  const BPM = 128;
+  const beat = 60 / BPM;
+
+  // Kick drum
+  function kick() {
+    if (!musicEnabled || currentTrack !== 'pulse') return;
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(180, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.15);
+    env.gain.setValueAtTime(0.7, ctx.currentTime);
+    env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3);
+    osc.connect(env); env.connect(musicGain);
+    osc.start(); osc.stop(ctx.currentTime + 0.35);
+    musicNodes.push(osc);
+  }
+
+  // Hi-hat
+  function hat(vol=0.06) {
+    if (!musicEnabled || currentTrack !== 'pulse') return;
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.04, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random()*2-1;
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const hp = ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=8000;
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(vol, ctx.currentTime);
+    env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+0.04);
+    src.connect(hp); hp.connect(env); env.connect(musicGain);
+    src.start(); musicNodes.push(src);
+  }
+
+  // Synth bass line
+  const bassLine = [65.4, 65.4, 73.4, 65.4, 87.3, 98, 73.4, 65.4];
+  let bassIdx = 0;
+  function bass() {
+    if (!musicEnabled || currentTrack !== 'pulse') return;
+    const f = bassLine[bassIdx++ % bassLine.length];
+    const osc = ctx.createOscillator();
+    const lp = ctx.createBiquadFilter();
+    const env = ctx.createGain();
+    osc.type = 'square'; osc.frequency.value = f;
+    lp.type = 'lowpass'; lp.frequency.value = 400;
+    env.gain.setValueAtTime(0.18, ctx.currentTime);
+    env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + beat * 0.9);
+    osc.connect(lp); lp.connect(env); env.connect(musicGain);
+    osc.start(); osc.stop(ctx.currentTime + beat);
+    musicNodes.push(osc);
+  }
+
+  // Lead arp
+  const leadNotes = [523, 659, 784, 659, 523, 440, 523, 659];
+  let leadIdx = 0;
+  function lead() {
+    if (!musicEnabled || currentTrack !== 'pulse') return;
+    if (leadIdx % 8 === 0) { leadIdx++; return; } // rest every 8
+    const f = leadNotes[leadIdx++ % leadNotes.length];
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = 'triangle'; osc.frequency.value = f;
+    env.gain.setValueAtTime(0.08, ctx.currentTime);
+    env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + beat * 0.5);
+    osc.connect(env); env.connect(musicGain);
+    osc.start(); osc.stop(ctx.currentTime + beat);
+    musicNodes.push(osc);
+  }
+
+  // Sequencer
+  let step = 0;
+  function seq() {
+    if (!musicEnabled || currentTrack !== 'pulse') return;
+    const s = step % 16;
+    if ([0,4,8,12].includes(s)) kick();
+    if (s % 2 === 1) hat(0.05);
+    if (s % 4 === 0) hat(0.09);
+    if (s % 2 === 0) bass();
+    if (s % 2 === 1) lead();
+    step++;
+    setTimeout(seq, beat * 500);
+  }
+  seq();
+}
+
+/* ─── Track 3: Tension Grid (cinematic staccato) ─── */
+function playTension() {
+  const ctx = getCtx();
+  const BPM = 100;
+  const beat = 60 / BPM;
+
+  // Tremolo strings effect
+  function strings() {
+    if (!musicEnabled || currentTrack !== 'tension') return;
+    const notes = [98, 116.5, 130.8, 155.6];
+    notes.forEach((f, ni) => {
+      const osc = ctx.createOscillator();
+      const trem = ctx.createOscillator();
+      const tremGain = ctx.createGain();
+      const env = ctx.createGain();
+      osc.type = 'sawtooth'; osc.frequency.value = f;
+      trem.type = 'sine'; trem.frequency.value = 8;
+      tremGain.gain.value = 0.5;
+      const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1200;
+      env.gain.setValueAtTime(0, ctx.currentTime);
+      env.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 0.1);
+      env.gain.setValueAtTime(0.07, ctx.currentTime + beat * 3.8);
+      env.gain.linearRampToValueAtTime(0, ctx.currentTime + beat * 4);
+      trem.connect(tremGain); tremGain.connect(env.gain);
+      osc.connect(lp); lp.connect(env); env.connect(musicGain);
+      osc.start(); osc.stop(ctx.currentTime + beat * 4 + 0.1);
+      trem.start(); trem.stop(ctx.currentTime + beat * 4 + 0.1);
+      musicNodes.push(osc, trem);
+    });
+  }
+
+  // Staccato brass hits
+  const brassPattern = [130.8, 0, 155.6, 0, 130.8, 174.6, 0, 130.8];
+  let brassIdx = 0;
+  function brass() {
+    if (!musicEnabled || currentTrack !== 'tension') return;
+    const f = brassPattern[brassIdx++ % brassPattern.length];
+    if (!f) return;
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = 'square'; osc.frequency.value = f;
+    env.gain.setValueAtTime(0, ctx.currentTime);
+    env.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.02);
+    env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + beat * 0.4);
+    osc.connect(env); env.connect(musicGain);
+    osc.start(); osc.stop(ctx.currentTime + beat * 0.5);
+    musicNodes.push(osc);
+  }
+
+  // Percussion
+  function perc(s) {
+    if (!musicEnabled || currentTrack !== 'tension') return;
+    makeNoise(0.05, 0.1, 3000);
+    if (s === 0 || s === 8) {
+      const osc = ctx.createOscillator(); const env = ctx.createGain();
+      osc.type = 'sine'; osc.frequency.setValueAtTime(120, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(35, ctx.currentTime + 0.2);
+      env.gain.setValueAtTime(0.35, ctx.currentTime);
+      env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25);
+      osc.connect(env); env.connect(musicGain);
+      osc.start(); osc.stop(ctx.currentTime + 0.3); musicNodes.push(osc);
+    }
+  }
+
+  // Sequencer
+  let step = 0;
+  function seq() {
+    if (!musicEnabled || currentTrack !== 'tension') return;
+    const s = step % 16;
+    perc(s);
+    if (s % 2 === 0) brass();
+    if (s === 0) strings();
+    step++;
+    setTimeout(seq, beat * 500);
+  }
+  seq();
+
+  // Low pulsing sub
+  function sub() {
+    if (!musicEnabled || currentTrack !== 'tension') return;
+    const osc = ctx.createOscillator(); const env = ctx.createGain();
+    osc.type = 'sine'; osc.frequency.value = 49;
+    env.gain.setValueAtTime(0.25, ctx.currentTime);
+    env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + beat * 1.8);
+    osc.connect(env); env.connect(musicGain);
+    osc.start(); osc.stop(ctx.currentTime + beat * 2); musicNodes.push(osc);
+    setTimeout(sub, beat * 2000);
+  }
+  sub();
+}
+
+/* ── Controls ── */
+function toggleMusic() {
+  musicEnabled = !musicEnabled;
+  document.getElementById('musicToggle').textContent = `♫ MUSIC: ${musicEnabled ? 'ON' : 'OFF'}`;
+  if (musicEnabled) {
+    startMusic();
+  } else {
+    stopMusic();
+  }
+}
+
+function toggleSfx() {
+  sfxEnabled = !sfxEnabled;
+  document.getElementById('sfxToggle').textContent = `🔊 SFX: ${sfxEnabled ? 'ON' : 'OFF'}`;
+}
+
+function setMusicVol(v) {
+  musicVolume = v / 100;
+  if (musicGain) musicGain.gain.setTargetAtTime(musicVolume, getCtx().currentTime, 0.1);
+}
+
+function setSfxVol(v) {
+  sfxVolume = v / 100;
+  if (sfxGain) sfxGain.gain.setTargetAtTime(sfxVolume, getCtx().currentTime, 0.1);
+}
+
+function changeTrack(val) {
+  currentTrack = val;
+  if (musicEnabled && gameStarted) { stopMusic(); startMusic(); }
+  else if (musicEnabled) { stopMusic(); startMusic(); }
+}
+
+/* ── Hook audio into game events ── */
+
+// Wrap original addPlayer
+const _origAddPlayer = addPlayer;
+window.addPlayer = function() {
+  _origAddPlayer();
+  sfx_addPlayer();
+};
+
+// Wrap original startGame
+const _origStartGame = startGame;
+window.startGame = function() {
+  _origStartGame();
+  sfx_gameStart();
+  setTimeout(startMusic, 800);
+};
+
+// Wrap original endGame
+const _origEndGame = endGame;
+window.endGame = function() {
+  _origEndGame();
+  stopMusic();
+  setTimeout(sfx_victory, 300);
+};
+
+// Wrap changeScore
+const _origChangeScore = changeScore;
+window.changeScore = function(i, val) {
+  _origChangeScore(i, val);
+  if (val > 0) { sfx_scoreUp(); sfx_rocketBoost(); }
+  else { sfx_scoreDown(); }
+};
+
+// Wrap applyCustom
+const _origApplyCustom = applyCustom;
+window.applyCustom = function(i) {
+  const v = parseFloat(document.getElementById(`custom${i}`).value);
+  _origApplyCustom(i);
+  if (!isNaN(v)) {
+    if (v > 0) { sfx_scoreUp(); sfx_rocketBoost(); }
+    else if (v < 0) { sfx_scoreDown(); }
+  }
+};
+
+// Hook asteroid hit sound into Asteroid class
+const _origAsteroidUpdate = Asteroid.prototype.update;
+Asteroid.prototype.update = function() {
+  const wasHit = this.hit;
+  _origAsteroidUpdate.call(this);
+  if (!wasHit && this.hit) sfx_asteroidImpact();
+};
+
+// Hook meteor sfx
+const _origMeteorUpdate = Meteor.prototype.update;
+Meteor.prototype.update = function() {
+  const wasAlive = this.alive;
+  _origMeteorUpdate.call(this);
+};
+
+// Spawn meteor sound occasionally
+const _origMeteorConstructor = Meteor;
+
+// Timer tick sounds — patch timer
+const _origTimerInterval_fn = updateTimerDisplay;
+window.updateTimerDisplay = function() {
+  _origTimerInterval_fn();
+  if (timeLeft <= 10 && timeLeft > 0) sfx_timerWarn();
+  else if (timeLeft > 0) sfx_timerTick();
+};
+
+// Button SFX for all .btn clicks
+document.addEventListener('click', e => {
+  if (e.target.matches('.btn') && !e.target.matches('.btn-score')) sfx_buttonClick();
+});
+
+// Start ambient music on first user interaction
+document.addEventListener('click', () => {
+  if (!musicScheduled && musicEnabled) {
+    startMusic();
+    musicScheduled = true;
+  }
+}, { once: true });
 </script>
 </body>
 </html>
